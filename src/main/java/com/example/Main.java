@@ -49,13 +49,18 @@ public class Main {
 
         try (Connection connection = DriverManager.getConnection(buildJdbcUrl(config), config.username, config.password)) {
             connection.setAutoCommit(false);
-            try (Statement statement = connection.createStatement()) {
-                statement.setQueryTimeout((int) QUERY_TIMEOUT.getSeconds());
-                for (int i = 0; i < statements.size(); i++) {
-                    executeStatement(statement, i + 1, statements.get(i));
+            try {
+                try (Statement statement = connection.createStatement()) {
+                    statement.setQueryTimeout((int) QUERY_TIMEOUT.getSeconds());
+                    for (int i = 0; i < statements.size(); i++) {
+                        executeStatement(statement, i + 1, statements.get(i));
+                    }
                 }
+                connection.commit();
+            } catch (SQLException executeErr) {
+                connection.rollback();
+                throw executeErr;
             }
-            connection.commit();
         } catch (SQLException e) {
             System.err.printf("database error: %s%n", e.getMessage());
             System.exit(1);
@@ -144,7 +149,7 @@ public class Main {
         System.out.println(sb);
     }
 
-    private static String buildJdbcUrl(Config config) {
+    static String buildJdbcUrl(Config config) {
         return switch (config.engine.toLowerCase(Locale.ROOT)) {
             case "oracle" -> String.format("jdbc:oracle:thin:@%s:%d/%s", config.host, config.port, config.dbname);
             case "sqlserver" -> String.format("jdbc:sqlserver://%s:%d;databaseName=%s", config.host, config.port, config.dbname);
@@ -153,7 +158,7 @@ public class Main {
         };
     }
 
-    private static int defaultPort(String engine) {
+    static int defaultPort(String engine) {
         return switch (engine.toLowerCase(Locale.ROOT)) {
             case "oracle" -> 1521;
             case "sqlserver" -> 1433;
@@ -162,7 +167,7 @@ public class Main {
         };
     }
 
-    private static List<String> splitSQLStatements(String input) {
+    static List<String> splitSQLStatements(String input) {
         List<String> statements = new ArrayList<>();
         BufferedReader reader = new BufferedReader(new StringReader(input));
         StringBuilder sb = new StringBuilder();
@@ -176,7 +181,7 @@ public class Main {
         try {
             while ((ch = reader.read()) != -1) {
                 char c = (char) ch;
-                String next = peek(reader, 2);
+                String nextOne = peek(reader, 1);
 
                 if (inLineComment) {
                     sb.append(c);
@@ -188,7 +193,7 @@ public class Main {
 
                 if (inBlockComment) {
                     sb.append(c);
-                    if (c == '*' && next.startsWith("/")) {
+                    if (c == '*' && nextOne.startsWith("/")) {
                         sb.append((char) reader.read());
                         inBlockComment = false;
                     }
@@ -210,12 +215,12 @@ public class Main {
                 }
 
                 if (!inSingle && !inDouble) {
-                    if (c == '-' && (next.equals("- ") || next.equals("--"))) {
+                    if (c == '-' && nextOne.startsWith("-")) {
                         sb.append(c).append((char) reader.read());
                         inLineComment = true;
                         continue;
                     }
-                    if (c == '/' && next.startsWith("*")) {
+                    if (c == '/' && nextOne.startsWith("*")) {
                         sb.append(c).append((char) reader.read());
                         inBlockComment = true;
                         continue;
@@ -284,7 +289,7 @@ public class Main {
         return new String(buffer, 0, read);
     }
 
-    private static class Config {
+    static class Config {
         private final String engine;
         private final String host;
         private final int port;

@@ -29,7 +29,7 @@ go run . \
 
 ```bash
 mvn clean package
-java -jar target/thin-cross-db-client-1.0.0.jar \
+java -jar target/thin-cross-db-client-1.0.0-jar-with-dependencies.jar \
   -engine postgres \
   -host 127.0.0.1 \
   -port 5432 \
