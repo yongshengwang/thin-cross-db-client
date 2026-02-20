@@ -12,14 +12,30 @@
 
 ## 使用方式
 
+### Go 版本
+
 ```bash
-go run . \\
-  -engine postgres \\
-  -host 127.0.0.1 \\
-  -port 5432 \\
-  -username db_admin \\
-  -password mypass \\
-  -dbname mydb \\
+go run . \
+  -engine postgres \
+  -host 127.0.0.1 \
+  -port 5432 \
+  -username db_admin \
+  -password mypass \
+  -dbname mydb \
+  -sql ./migrations.sql
+```
+
+### Java (Maven) 版本
+
+```bash
+mvn clean package
+java -jar target/thin-cross-db-client-1.0.0-jar-with-dependencies.jar \
+  -engine postgres \
+  -host 127.0.0.1 \
+  -port 5432 \
+  -username db_admin \
+  -password mypass \
+  -dbname mydb \
   -sql ./migrations.sql
 ```
 
